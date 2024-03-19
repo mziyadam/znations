@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:znations/data/model/nation.dart';
+import 'package:znations/ui/custom_widget/nation_card.dart';
 import 'package:znations/ui/home/home_view_model.dart';
+import 'package:znations/utils/ad_helper.dart';
 
 // TODO: Import google_mobile_ads.dart
 // import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class HomePage extends StatefulWidget {
-
+  bool isInit=true;
 
   HomePage({super.key});
 
@@ -16,47 +20,48 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // TODO: Add _bannerAd
-  // BannerAd? _bannerAd;
+  BannerAd? _bannerAd;
 
   @override
   void initState() {
     // TODO: Load a banner ad
-    // BannerAd(
-    //   adUnitId: AdHelper.bannerAdUnitId,
-    //   request: const AdRequest(),
-    //   size: AdSize.banner,
-    //   listener: BannerAdListener(
-    //     onAdLoaded: (ad) {
-    //       setState(() {
-    //         _bannerAd = ad as BannerAd;
-    //       });
-    //     },
-    //     onAdFailedToLoad: (ad, err) {
-    //       print('Failed to load a banner ad: ${err.message}');
-    //       ad.dispose();
-    //     },
-    //   ),
-    // ).load();
+    BannerAd(
+      adUnitId: AdHelper.bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _bannerAd = ad as BannerAd;
+          });
+        },
+        onAdFailedToLoad: (ad, err) {
+          print('Failed to load a banner ad: ${err.message}');
+          ad.dispose();
+        },
+      ),
+    ).load();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    List<String> nations = Provider.of<HomeViewModel>(context).nations;
-    if (nations.isEmpty) {
+    List<Nation> nations = Provider.of<HomeViewModel>(context).nations;
+    if (nations.isEmpty && widget.isInit) {
       WidgetsBinding.instance.addPostFrameCallback((_){
         Provider.of<HomeViewModel>(context,listen: false).getData();
       });
+      setState(() {
+        widget.isInit=false;
+      });
     }
+
     return Scaffold(
         appBar: AppBar(
-          // TRY THIS: Try changing the color here to a specific color (to
-          // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-          // change color while the other colors stay the same.
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text('znations'),
+          title: Text('znations'
+            ,style: TextStyle(fontWeight: FontWeight.w400),
+          ),
         ),
         body: Stack(
       children: [
@@ -69,13 +74,13 @@ class _HomePageState extends State<HomePage> {
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  // if (nations.isEmpty)
-                  //   const Center(
-                  //     child: CircularProgressIndicator(
-                  //       color: Colors.grey,
-                  //     ),
-                  //     // Text('loading')
-                  //   ),
+                  if (nations.isEmpty&&widget.isInit)
+                    const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.grey,
+                      ),
+                      // Text('loading')
+                    ),
                   nations.isEmpty
                       ? const Center(
                           child: Padding(
@@ -102,7 +107,7 @@ class _HomePageState extends State<HomePage> {
                           physics: const NeverScrollableScrollPhysics(),
                           shrinkWrap: true,
                           itemBuilder: (BuildContext context, int index) {
-                            return Text(nations[index]);
+                            return NationCard(nation:nations[index]);
                           }),
                   const SizedBox(
                     height: 64.0,
@@ -175,28 +180,28 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         // TODO: Display a banner when ready
-        // if (_bannerAd != null)
-        //   Align(
-        //     alignment: Alignment.bottomCenter,
-        //     child: Container(
-        //       width: _bannerAd!.size.width.toDouble(),
-        //       height: _bannerAd!.size.height.toDouble(),
-        //       child: AdWidget(ad: _bannerAd!),
-        //     ),
-        //   ),
+        if (_bannerAd != null)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: _bannerAd!.size.width.toDouble(),
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
+          ),
       ],
     ));
   }
 
   Future<void> _pullRefresh() async {
     print('pull referesh');
-    // Provider.of<HomeViewModel>(context, listen: false).downloadData();
+    Provider.of<HomeViewModel>(context, listen: false).refresh();
   }
 
   @override
   void dispose() {
     // TODO: Dispose a BannerAd object
-    // _bannerAd?.dispose();
+    _bannerAd?.dispose();
     super.dispose();
   }
 }
